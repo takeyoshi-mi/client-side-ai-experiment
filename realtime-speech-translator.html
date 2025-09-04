@@ -835,20 +835,33 @@
             };
 
             recognition.onend = () => {
-                speechStatus.textContent = '再開中';
-                speechStatus.className = 'status-value loading';
-                console.log('音声認識が停止しました - 再開します');
+                console.log('音声認識が停止しました');
                 
-                // 自動的に再開
-                setTimeout(() => {
-                    if (startBtn.disabled) { // 音声認識がアクティブな場合のみ再開
-                        try {
-                            recognition.start();
-                        } catch (e) {
-                            console.log('再開失敗:', e);
+                // ユーザーが明示的に停止した場合は再開しない
+                if (startBtn.disabled) { // 音声認識がまだアクティブな場合のみ再開
+                    speechStatus.textContent = '再開中';
+                    speechStatus.className = 'status-value loading';
+                    
+                    // 自動的に再開（少し遅延を入れる）
+                    setTimeout(() => {
+                        if (startBtn.disabled) {
+                            try {
+                                recognition.start();
+                            } catch (e) {
+                                console.log('再開失敗:', e);
+                                // 再開に失敗した場合はボタン状態をリセット
+                                startBtn.disabled = false;
+                                stopBtn.disabled = true;
+                                speechStatus.textContent = '停止';
+                                speechStatus.className = 'status-value inactive';
+                                showWarning('音声認識の継続に失敗しました。再度開始してください。');
+                            }
                         }
-                    }
-                }, 100);
+                    }, 500);
+                } else {
+                    speechStatus.textContent = '停止';
+                    speechStatus.className = 'status-value inactive';
+                }
             };
 
             recognition.onerror = (event) => {
@@ -1040,11 +1053,8 @@
             }
         }
 
-        startBtn.addEventListener('click', async () => {
+        startBtn.addEventListener('click', () => {
             try {
-                // マイクアクセス許可を先に確認
-                await navigator.mediaDevices.getUserMedia({ audio: true });
-                
                 if (!recognition) {
                     setupSpeechRecognition();
                 }
@@ -1059,14 +1069,10 @@
                 clearTimeout(silenceTimer);
                 hideWarning();
             } catch (error) {
-                console.error('マイクアクセスエラー:', error);
-                if (error.name === 'NotAllowedError') {
-                    showWarning('マイクアクセスが許可されていません。ブラウザの設定でマイクを許可してください。');
-                } else if (error.name === 'NotFoundError') {
-                    showWarning('マイクが見つかりません。マイクが接続されているか確認してください。');
-                } else {
-                    showWarning('マイクアクセスでエラーが発生しました。ブラウザを更新して再度お試しください。');
-                }
+                console.error('音声認識開始エラー:', error);
+                showWarning('音声認識の開始に失敗しました。ブラウザを更新して再度お試しください。');
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
             }
         });
 
