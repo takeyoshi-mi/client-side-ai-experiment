@@ -702,8 +702,27 @@
                 return;
             }
 
-            speechStatus.textContent = '利用可能';
-            speechStatus.className = 'status-value active';
+            // マイクアクセス許可状態を確認
+            try {
+                const permissions = await navigator.permissions.query({ name: 'microphone' });
+                if (permissions.state === 'denied') {
+                    showWarning('マイクアクセスが拒否されています。ブラウザの設定でマイクアクセスを許可してください。');
+                    speechStatus.textContent = 'アクセス拒否';
+                    speechStatus.className = 'status-value inactive';
+                    startBtn.disabled = true;
+                    return;
+                } else if (permissions.state === 'prompt') {
+                    speechStatus.textContent = '許可待ち';
+                    speechStatus.className = 'status-value loading';
+                } else {
+                    speechStatus.textContent = '利用可能';
+                    speechStatus.className = 'status-value active';
+                }
+            } catch (error) {
+                // permissions API が利用できない場合
+                speechStatus.textContent = '利用可能';
+                speechStatus.className = 'status-value active';
+            }
 
             // AI モデルの利用可能性を確認
             await checkModelAvailability();
@@ -837,12 +856,32 @@
                 speechStatus.textContent = 'エラー';
                 speechStatus.className = 'status-value inactive';
                 
-                if (event.error === 'no-speech') {
-                    showWarning('音声が検出されませんでした。マイクを確認してください。');
-                } else if (event.error === 'not-allowed') {
-                    showWarning('マイクへのアクセスが拒否されました。');
-                } else {
-                    showWarning(`音声認識エラー: ${event.error}`);
+                // ボタンの状態を元に戻す
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                
+                switch(event.error) {
+                    case 'no-speech':
+                        showWarning('音声が検出されませんでした。マイクが正常に動作しているか確認してください。');
+                        break;
+                    case 'not-allowed':
+                        showWarning('マイクへのアクセスが拒否されました。ブラウザの設定でマイクアクセスを許可してください。');
+                        speechStatus.textContent = 'アクセス拒否';
+                        break;
+                    case 'audio-capture':
+                        showWarning('マイクでの音声キャプチャに失敗しました。マイクが他のアプリで使用されていないか確認してください。');
+                        break;
+                    case 'network':
+                        showWarning('ネットワークエラーが発生しました。インターネット接続を確認してください。');
+                        break;
+                    case 'aborted':
+                        // ユーザーが停止した場合は警告を表示しない
+                        hideWarning();
+                        speechStatus.textContent = '停止';
+                        break;
+                    default:
+                        showWarning(`音声認識エラーが発生しました: ${event.error}`);
+                        break;
                 }
             };
 
@@ -1001,20 +1040,34 @@
             }
         }
 
-        startBtn.addEventListener('click', () => {
-            if (!recognition) {
-                setupSpeechRecognition();
+        startBtn.addEventListener('click', async () => {
+            try {
+                // マイクアクセス許可を先に確認
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                if (!recognition) {
+                    setupSpeechRecognition();
+                }
+                
+                recognition.start();
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                currentSessionText = '';
+                currentSessionTranslation = '';
+                englishText.textContent = '';
+                japaneseText.textContent = '';
+                clearTimeout(silenceTimer);
+                hideWarning();
+            } catch (error) {
+                console.error('マイクアクセスエラー:', error);
+                if (error.name === 'NotAllowedError') {
+                    showWarning('マイクアクセスが許可されていません。ブラウザの設定でマイクを許可してください。');
+                } else if (error.name === 'NotFoundError') {
+                    showWarning('マイクが見つかりません。マイクが接続されているか確認してください。');
+                } else {
+                    showWarning('マイクアクセスでエラーが発生しました。ブラウザを更新して再度お試しください。');
+                }
             }
-            
-            recognition.start();
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            currentSessionText = '';
-            currentSessionTranslation = '';
-            englishText.textContent = '';
-            japaneseText.textContent = '';
-            clearTimeout(silenceTimer);
-            hideWarning();
         });
 
         stopBtn.addEventListener('click', () => {
