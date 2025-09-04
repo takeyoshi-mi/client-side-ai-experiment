@@ -683,7 +683,7 @@
         async function initialize() {
             // Chrome AI APIの確認
             if (!window.LanguageModel) {
-                showWarning('Chrome AI APIが利用できません。Chrome Canary 128以降を使用し、chrome://flags でPrompt APIを有効にしてください。');
+                showWarning('Chrome AI APIが利用できません。chrome://flags で"Prompt API for Gemini Nano"、"Enables optimization guide on device"を有効にしてください。');
                 aiStatus.textContent = '利用不可';
                 aiStatus.className = 'status-value inactive';
                 startBtn.disabled = true;
@@ -1014,11 +1014,11 @@
             historyDiv.innerHTML = translationHistory.map(item => `
                 <div class="history-item">
                     <div class="history-text">
-                        <div class="language-indicator">🇬🇧 English</div>
+                        <div class="language-indicator">English</div>
                         <div class="history-english">${item.english}</div>
                     </div>
                     <div class="history-text">
-                        <div class="language-indicator">🇯🇵 日本語</div>
+                        <div class="language-indicator">日本語</div>
                         <div class="history-japanese">${item.japanese}</div>
                     </div>
                     <div class="timestamp">${item.timestamp}</div>
