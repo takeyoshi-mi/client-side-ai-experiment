@@ -726,6 +726,13 @@
 
             // AI モデルの利用可能性を確認
             await checkModelAvailability();
+            
+            // デバッグモード: AI APIが利用できない場合でも音声認識をテスト可能にする
+            if (!window.LanguageModel) {
+                console.log('デバッグモード: AI APIなしで音声認識のみ動作');
+                startBtn.disabled = false; // 音声認識のテストを可能にする
+                showWarning('デバッグモード: AI翻訳は利用できませんが、音声認識のテストが可能です。');
+            }
         }
 
         // モデルの利用可能性を確認
