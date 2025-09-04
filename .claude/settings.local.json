@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "WebFetch(domain:developer.chrome.com)",
+      "Read(/C:\\Users\\Takey\\OneDrive\\デスクトップ\\Projects\\realtime-translation/**)",
+      "mcp___21st-dev_magic__21st_magic_component_refiner",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
